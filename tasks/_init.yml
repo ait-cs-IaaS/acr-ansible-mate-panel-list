@@ -1,0 +1,134 @@
+---
+- name: Set customize_user
+  when: customize_user is not defined
+  block:
+    - name: Get currently installed username
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          cut -d: -f1,3 /etc/passwd | egrep ':[0-9]{4}$' | cut -d: -f1
+      args:
+        executable: /bin/bash
+      register: _customize_user
+      changed_when: false
+
+    - name: Set user to be used for customization
+      ansible.builtin.set_fact:
+        customize_user: '{{ _customize_user.stdout }}'
+
+- name: Install util applications
+  become: true
+  ansible.builtin.apt:
+    name:
+      - dconf-editor
+      - dbus
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Set dconf profile
+  become: true
+  become_user: '{{ customize_user }}'
+  ansible.builtin.copy:
+    dest: /home/{{ customize_user }}/profile
+    content: user-db:user
+
+- name: Set default panels
+  become: true
+  become_user: '{{ customize_user }}'
+  ansible.builtin.shell: |
+    dbus-launch dconf load / << EOF 
+    [org/mate/panel/general]
+    object-id-list=['briskmenu', 'firefox', 'notification-area', 'clock', 'show-desktop', 'window-list', 'workspace-switcher', 'trashapplet']
+    toplevel-id-list=['top', 'bottom']
+
+    [org/mate/panel/toplevels/bottom]
+    expand=true
+    orientation='bottom'
+    screen=0
+    y-bottom=0
+    size=28
+    y=572
+
+    [org/mate/panel/toplevels/top]
+    expand=true
+    orientation='top'
+    screen=0
+    size=28
+
+    [org/mate/panel/objects/workspace-switcher]
+    applet-iid='WnckletFactory::WorkspaceSwitcherApplet'
+    locked=true
+    toplevel-id='bottom'
+    position=10
+    object-type='applet'
+    panel-right-stick=true
+
+    [org/mate/panel/objects/firefox]
+    locked=true
+    launcher-location='/usr/share/applications/firefox.desktop'
+    menu-path='applications:/'
+    position=10
+    object-type='launcher'
+    toplevel-id='top'
+
+    [org/mate/panel/objects/clock]
+    applet-iid='ClockAppletFactory::ClockApplet'
+    locked=true
+    toplevel-id='top'
+    position=0
+    object-type='applet'
+    panel-right-stick=true
+
+    [org/mate/panel/objects/clock/prefs]
+    format='24-hour'
+    custom-format=''
+
+    [org/mate/panel/objects/indicatorappletcomplete]
+    applet-iid='IndicatorAppletCompleteFactory::IndicatorAppletComplete'
+    locked=true
+    toplevel-id='top'
+    position=10
+    object-type='applet'
+    panel-right-stick=true
+
+    [org/mate/panel/objects/window-list]
+    applet-iid='WnckletFactory::WindowListApplet'
+    locked=true
+    toplevel-id='bottom'
+    position=20
+    object-type='applet'
+
+    [org/mate/panel/objects/notification-area]
+    applet-iid='NotificationAreaAppletFactory::NotificationArea'
+    locked=true
+    toplevel-id='top'
+    position=20
+    object-type='applet'
+    panel-right-stick=true
+
+    [org/mate/panel/objects/briskmenu]
+    applet-iid='BriskMenuFactory::BriskMenu'
+    locked=true
+    toplevel-id='top'
+    position=0
+    object-type='applet'
+
+    [org/mate/panel/objects/show-desktop]
+    applet-iid='WnckletFactory::ShowDesktopApplet'
+    locked=true
+    toplevel-id='bottom'
+    position=0
+    object-type='applet'
+
+    [org/mate/panel/objects/trashapplet]
+    applet-iid='TrashAppletFactory::TrashApplet'
+    locked=true
+    toplevel-id='bottom'
+    position=0
+    object-type='applet'
+    panel-right-stick=true
+
+    EOF
+  environment:
+    DISPLAY: ':0'
+  changed_when: true

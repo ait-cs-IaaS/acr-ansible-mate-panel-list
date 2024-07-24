@@ -1,0 +1,20 @@
+---
+panel_list:
+  - briskmenu
+  - firefox
+  - notification-area
+  - clock
+  - show-desktop
+  - window-list
+  - workspace-switcher
+  - trashapplet
+
+client_launcher_objects:
+  caja-filebrowser:
+    position: 15
+  firefox:
+    position: 20
+  thunderbird:
+    position: 25
+  mate-terminal:
+    position: 30
