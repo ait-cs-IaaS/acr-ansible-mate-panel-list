@@ -22,6 +22,7 @@
     name:
       - dconf-editor
       - dbus
+      - dbus-x11
     update_cache: true
     cache_valid_time: 3600
 
